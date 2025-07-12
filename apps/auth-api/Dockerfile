@@ -1,7 +1,29 @@
 # Multi-stage build for production
 FROM node:18-alpine AS base
 
-# Install dependencies only when needed
+# Build stage
+FROM base AS builder
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+COPY apps/auth-api/package*.json ./apps/auth-api/
+COPY libs/shared/package*.json ./libs/shared/
+COPY libs/prisma/package*.json ./libs/prisma/
+
+# Install all dependencies (including dev dependencies for build)
+RUN npm ci
+
+# Copy all files needed for build
+COPY . .
+
+# Generate Prisma client
+RUN cd libs/prisma && npx prisma generate
+
+# Build the application
+RUN npm run build
+
+# Dependencies stage for production
 FROM base AS deps
 WORKDIR /app
 
@@ -11,22 +33,8 @@ COPY apps/auth-api/package*.json ./apps/auth-api/
 COPY libs/shared/package*.json ./libs/shared/
 COPY libs/prisma/package*.json ./libs/prisma/
 
-# Install dependencies
+# Install only production dependencies
 RUN npm ci --only=production && npm cache clean --force
-
-# Build stage
-FROM base AS builder
-WORKDIR /app
-
-# Copy all files needed for build
-COPY . .
-COPY --from=deps /app/node_modules ./node_modules
-
-# Generate Prisma client
-RUN cd libs/prisma && npx prisma generate
-
-# Build the application
-RUN npm run build
 
 # Production stage
 FROM base AS runner
@@ -40,7 +48,7 @@ RUN adduser --system --uid 1001 nestjs
 
 # Copy built application
 COPY --from=builder --chown=nestjs:nodejs /app/dist ./dist
-COPY --from=builder --chown=nestjs:nodejs /app/node_modules ./node_modules
+COPY --from=deps --chown=nestjs:nodejs /app/node_modules ./node_modules
 COPY --from=builder --chown=nestjs:nodejs /app/package*.json ./
 
 USER nestjs

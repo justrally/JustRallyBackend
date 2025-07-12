@@ -79,12 +79,12 @@ jobs:
         sleep 30
         curl -f "$URL/api/v1/health" || exit 1
 
-    # - name: Update custom domain mapping
-    #   run: |
-    #     gcloud run domain-mappings create \
-    #       --service auth-api-dev \
-    #       --domain api-dev.justrally.online \
-    #       --platform managed \
-    #       --region us-central1 \
-    #       --project justrallydev \
-    #       --quiet || echo "Domain mapping may already exist"
+    - name: Update custom domain mapping
+      run: |
+        gcloud beta run domain-mappings create \
+          --service auth-api-dev \
+          --domain api-dev.justrally.online \
+          --platform managed \
+          --region us-central1 \
+          --project justrallydev \
+          --quiet || echo "Domain mapping may already exist"

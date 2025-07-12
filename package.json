@@ -1,0 +1,24 @@
+{
+  "name": "justrally-backend",
+  "version": "1.0.0",
+  "description": "JustRally Backend API - Node.js monorepo with auth service",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "libs/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace=apps/auth-api",
+    "build": "npm run build --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present"
+  },
+  "keywords": ["auth", "api", "nodejs", "nestjs", "monorepo"],
+  "author": "JustRally",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  }
+}

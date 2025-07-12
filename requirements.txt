@@ -1,0 +1,16 @@
+I am creating a skeleton project for a Next.js project
+
+1. Create a new Next.js project
+2. create a new auth-api that uses firebase auth
+for the client side, if it is new users, it will need to login with phone number and code.
+once it is logged in, it does not need to login again until logout.
+any following requests should be authenticated with JWT token.
+please design api meets these requirements.
+5. should deploy to both dev and prod environments. push to github and deploy to dev and prod gcp.
+6. should have a dockerfile for each service.
+7. use github for version control.
+8. use github actions for deployment.
+9. use github actions for CI/CD.
+10. add linting and formatting.
+
+help me organize these requirements more clearly. give me any suggestions needed. but ask me first.

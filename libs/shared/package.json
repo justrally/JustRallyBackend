@@ -1,0 +1,17 @@
+{
+  "name": "@justrally/shared",
+  "version": "1.0.0",
+  "description": "Shared utilities and types for JustRally Backend",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rm -rf dist",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "typescript": "^5.8.3"
+  }
+}

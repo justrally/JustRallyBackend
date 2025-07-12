@@ -25,7 +25,7 @@ jobs:
     - name: Build application
       run: |
         npm run build --workspace=libs/shared
-        cd libs/prisma && npx prisma generate
+        cd libs/prisma && npx prisma generate && cd ../..
         npx tsc --project apps/auth-api/tsconfig.json
 
     - id: 'auth'

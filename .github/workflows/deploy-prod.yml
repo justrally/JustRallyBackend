@@ -1,0 +1,112 @@
+name: Deploy to Production
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_production:
+        description: 'Type "DEPLOY_TO_PRODUCTION" to confirm'
+        required: true
+        default: ''
+
+jobs:
+  validate-input:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Validate production deployment confirmation
+      run: |
+        if [ "${{ github.event.inputs.confirm_production }}" != "DEPLOY_TO_PRODUCTION" ]; then
+          echo "❌ Production deployment not confirmed. Please type 'DEPLOY_TO_PRODUCTION' exactly."
+          exit 1
+        fi
+        echo "✅ Production deployment confirmed"
+
+  deploy-prod:
+    runs-on: ubuntu-latest
+    environment: production
+    needs: validate-input
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Build application
+      run: |
+        npm run build --workspace=libs/shared
+        cd libs/prisma && npx prisma generate
+        npx tsc --project apps/auth-api/tsconfig.json
+
+    - id: 'auth'
+      name: 'Authenticate to Google Cloud'
+      uses: 'google-github-actions/auth@v2'
+      with:
+        credentials_json: '${{ secrets.GCP_SERVICE_ACCOUNT_KEY_PROD }}'
+
+    - name: 'Set up Cloud SDK'
+      uses: 'google-github-actions/setup-gcloud@v2'
+
+    - name: Configure Docker for Artifact Registry
+      run: gcloud auth configure-docker us-central1-docker.pkg.dev
+
+    - name: Build and push Docker image
+      run: |
+        IMAGE_TAG="us-central1-docker.pkg.dev/justrallyprod/justrally-backend/auth-api:${{ github.sha }}"
+        docker build -f apps/auth-api/Dockerfile -t $IMAGE_TAG .
+        docker push $IMAGE_TAG
+        echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
+
+    - name: Run database migrations
+      run: |
+        cd libs/prisma
+        DATABASE_URL="${{ secrets.DATABASE_URL_PROD }}" npx prisma db push
+
+    - name: Deploy to Cloud Run
+      run: |
+        gcloud run deploy auth-api-prod \
+          --image ${{ env.IMAGE_TAG }} \
+          --platform managed \
+          --region us-central1 \
+          --allow-unauthenticated \
+          --set-env-vars "NODE_ENV=production" \
+          --set-env-vars "FIREBASE_PROJECT_ID=justrallyprod-51c2e" \
+          --set-env-vars "GCP_PROJECT_ID=justrallyprod" \
+          --set-secrets "DATABASE_URL=DATABASE_URL_PROD:latest" \
+          --set-secrets "JWT_PRIVATE_KEY=JWT_PRIVATE_KEY_PROD:latest" \
+          --set-secrets "JWT_PUBLIC_KEY=JWT_PUBLIC_KEY_PROD:latest" \
+          --add-cloudsql-instances justrallyprod:us-central1:justrally-db-prod \
+          --memory 1Gi \
+          --cpu 2 \
+          --max-instances 50 \
+          --port 8080 \
+          --project justrallyprod
+
+    - name: Test deployment
+      run: |
+        URL=$(gcloud run services describe auth-api-prod --platform managed --region us-central1 --format 'value(status.url)' --project justrallyprod)
+        echo "Testing deployment at: $URL"
+        sleep 30
+        curl -f "$URL/api/v1/health" || exit 1
+
+    - name: Update custom domain mapping
+      run: |
+        gcloud run domain-mappings create \
+          --service auth-api-prod \
+          --domain api-prod.justrally.online \
+          --platform managed \
+          --region us-central1 \
+          --project justrallyprod \
+          --quiet || echo "Domain mapping may already exist"
+
+    - name: Notify deployment success
+      run: |
+        echo "🎉 Production deployment successful!"
+        echo "🌐 API URL: https://api-prod.justrally.online"
+        echo "📊 Health Check: https://api-prod.justrally.online/api/v1/health"

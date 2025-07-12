@@ -1,0 +1,85 @@
+version: '3.8'
+
+services:
+  # Local PostgreSQL for development
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: justrally_user
+      POSTGRES_PASSWORD: localdev123
+      POSTGRES_DB: dev-db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U justrally_user -d dev-db"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Cloud SQL Proxy for connecting to GCP
+  cloud-sql-proxy:
+    image: gcr.io/cloudsql-docker/gce-proxy:1.33.2
+    command: 
+      - "/cloud_sql_proxy"
+      - "-instances=justrallydev:us-central1:justrally-db-dev=tcp:0.0.0.0:5433"
+      - "-credential_file=/config/gcp-key.json"
+    ports:
+      - "5433:5433"
+    volumes:
+      - ./secrets/gcp-key.json:/config/gcp-key.json:ro
+    profiles:
+      - cloud-sql
+
+  # Auth API Service
+  auth-api:
+    build:
+      context: .
+      dockerfile: apps/auth-api/Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      - DATABASE_URL=postgresql://justrally_user:localdev123@postgres:5432/dev-db?schema=public
+      - FIREBASE_PROJECT_ID=justrallydevfirebase
+      - JWT_PRIVATE_KEY=dev-secret-key-not-for-production
+      - JWT_PUBLIC_KEY=dev-secret-key-not-for-production
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./apps/auth-api/src:/app/apps/auth-api/src:ro
+      - ./libs:/app/libs:ro
+    profiles:
+      - api
+
+  # Development setup with hot reload
+  auth-api-dev:
+    build:
+      context: .
+      dockerfile: apps/auth-api/Dockerfile.dev
+    ports:
+      - "3000:3000"
+      - "9229:9229"  # Debug port
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      - DATABASE_URL=postgresql://justrally_user:localdev123@postgres:5432/dev-db?schema=public
+      - FIREBASE_PROJECT_ID=justrallydevfirebase
+      - JWT_PRIVATE_KEY=dev-secret-key-not-for-production
+      - JWT_PUBLIC_KEY=dev-secret-key-not-for-production
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/dist
+    profiles:
+      - dev
+
+volumes:
+  postgres_data:

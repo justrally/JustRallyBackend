@@ -43,9 +43,8 @@ jobs:
 
     - name: Generate Prisma client
       run: |
-        cd libs/prisma
-        DATABASE_URL="postgresql://justrally_user:test123@localhost:5432/test_db?schema=public" npx prisma generate
-        DATABASE_URL="postgresql://justrally_user:test123@localhost:5432/test_db?schema=public" npx prisma db push
+        DATABASE_URL="postgresql://justrally_user:test123@localhost:5432/test_db?schema=public" npx prisma generate --schema=libs/prisma/prisma/schema.prisma
+        DATABASE_URL="postgresql://justrally_user:test123@localhost:5432/test_db?schema=public" npx prisma db push --schema=libs/prisma/prisma/schema.prisma
 
     - name: Type check
       run: npm run typecheck

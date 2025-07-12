@@ -1,29 +1,13 @@
 name: Deploy to Production
 
 on:
-  workflow_dispatch:
-    inputs:
-      confirm_production:
-        description: 'Type "DEPLOY_TO_PRODUCTION" to confirm'
-        required: true
-        default: ''
+  push:
+    branches: [main, master]
 
 jobs:
-  validate-input:
-    runs-on: ubuntu-latest
-    steps:
-    - name: Validate production deployment confirmation
-      run: |
-        if [ "${{ github.event.inputs.confirm_production }}" != "DEPLOY_TO_PRODUCTION" ]; then
-          echo "❌ Production deployment not confirmed. Please type 'DEPLOY_TO_PRODUCTION' exactly."
-          exit 1
-        fi
-        echo "✅ Production deployment confirmed"
-
   deploy-prod:
     runs-on: ubuntu-latest
     environment: production
-    needs: validate-input
 
     steps:
     - name: Checkout code
@@ -65,8 +49,7 @@ jobs:
 
     - name: Run database migrations
       run: |
-        cd libs/prisma
-        DATABASE_URL="${{ secrets.DATABASE_URL_PROD }}" npx prisma db push
+        DATABASE_URL="${{ secrets.DATABASE_URL_PROD }}" npx prisma db push --schema=libs/prisma/prisma/schema.prisma
 
     - name: Deploy to Cloud Run
       run: |
@@ -97,7 +80,7 @@ jobs:
 
     - name: Update custom domain mapping
       run: |
-        gcloud run domain-mappings create \
+        gcloud beta run domain-mappings create \
           --service auth-api-prod \
           --domain api-prod.justrally.online \
           --platform managed \

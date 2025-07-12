@@ -38,4 +38,4 @@ npm test
 - **Development**: justrallydev GCP project
 - **Production**: justrallyprod GCP project
 - **Database**: Cloud SQL PostgreSQL
-- **Container Registry**: Artifact Registry
+- **Container Registry**: Artifact Registry# Last updated: Sat Jul 12 15:09:42 PDT 2025

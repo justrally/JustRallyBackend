@@ -63,9 +63,9 @@ jobs:
           --set-secrets "JWT_PRIVATE_KEY=JWT_PRIVATE_KEY_PROD:latest" \
           --set-secrets "JWT_PUBLIC_KEY=JWT_PUBLIC_KEY_PROD:latest" \
           --add-cloudsql-instances justrallyprod:us-central1:justrally-db-prod \
-          --memory 1Gi \
-          --cpu 2 \
-          --max-instances 50 \
+          --memory 512Mi \
+          --cpu 1 \
+          --max-instances 10 \
           --port 8080 \
           --project justrallyprod
 

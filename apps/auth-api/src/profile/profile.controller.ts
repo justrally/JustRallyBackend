@@ -10,7 +10,7 @@ export class ProfileController {
   constructor(private readonly profileService: ProfileService) {}
 
   @Get()
-  async getProfile(@Request() req: any): Promise<ProfileResponseDto> {
+  async getProfile(@Request() req: any): Promise<{ user: ProfileResponseDto; completed: boolean }> {
     return this.profileService.getProfile(req.user.id);
   }
 

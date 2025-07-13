@@ -2,16 +2,16 @@ import { Injectable, NotFoundException, ConflictException } from '@nestjs/common
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { ProfileResponseDto } from './dto/profile-response.dto';
-
+import { isNil } from 'lodash';
 @Injectable()
 export class ProfileService {
   constructor(private prisma: PrismaService) {}
 
-  async getProfile(userId: string): Promise<ProfileResponseDto> {
+  async getProfile(userId: string): Promise<{ user: ProfileResponseDto; completed: boolean }> {
     const user = await this.prisma.user.findUnique({
-      where: { 
+      where: {
         id: userId,
-        deleted: false 
+        deleted: false,
       },
     });
 
@@ -19,7 +19,13 @@ export class ProfileService {
       throw new NotFoundException('User not found');
     }
 
-    return ProfileResponseDto.fromUser(user);
+    const completed =
+      !isNil(user.birthday) &&
+      !isNil(user.gender) &&
+      !isNil(user.tennisLevel) &&
+      !isNil(user.username);
+
+    return { user: ProfileResponseDto.fromUser(user), completed };
   }
 
   async updateProfile(
@@ -29,9 +35,9 @@ export class ProfileService {
     // Check if username is being updated and if it's already taken
     if (updateProfileDto.username) {
       const existingUser = await this.prisma.user.findFirst({
-        where: { 
+        where: {
           username: updateProfileDto.username,
-          deleted: false 
+          deleted: false,
         },
       });
 
@@ -43,16 +49,14 @@ export class ProfileService {
     // Convert birthday string to Date if provided
     const data: any = {
       ...updateProfileDto,
-      birthday: updateProfileDto.birthday
-        ? new Date(updateProfileDto.birthday)
-        : undefined,
+      birthday: updateProfileDto.birthday ? new Date(updateProfileDto.birthday) : undefined,
     };
 
     try {
       const updatedUser = await this.prisma.user.update({
-        where: { 
+        where: {
           id: userId,
-          deleted: false 
+          deleted: false,
         },
         data,
       });
@@ -71,9 +75,9 @@ export class ProfileService {
 
   async checkUsernameAvailability(username: string): Promise<{ available: boolean }> {
     const user = await this.prisma.user.findFirst({
-      where: { 
+      where: {
         username,
-        deleted: false 
+        deleted: false,
       },
     });
 

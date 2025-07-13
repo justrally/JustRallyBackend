@@ -12,7 +12,8 @@
     "build": "npm run build --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present",
-    "typecheck": "npm run typecheck --workspaces --if-present"
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "start:prod": "npm run start:prod --workspace=apps/auth-api"
   },
   "keywords": [
     "auth",
@@ -28,7 +29,8 @@
     "npm": ">=8.0.0"
   },
   "dependencies": {
-    "zod": "^4.0.5"
+    "zod": "^4.0.5",
+    "@prisma/client": "^6.11.1"
   },
   "devDependencies": {
     "@commitlint/cli": "^19.8.1",

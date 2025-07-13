@@ -1,6 +1,6 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
-import { FirebaseService } from '../../firebase/firebase.service';
+import { PrismaService } from '@prisma/prisma.service';
+import { FirebaseService } from '@firebase/firebase.service';
 import { JwtService } from './jwt.service';
 
 // Simple types for now
@@ -11,10 +11,6 @@ interface LoginRequest {
 interface User {
   id: string;
   firebaseUid: string;
-  email: string;
-  displayName?: string;
-  photoURL?: string;
-  phoneNumber?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -38,28 +34,43 @@ export class AuthService {
 
   async login(loginRequest: LoginRequest) {
     try {
-      // For now, create a mock response to test the service
-      const mockUser: User = {
-        id: 'test-user-123',
-        firebaseUid: 'firebase-uid-123',
-        email: 'test@example.com',
-        displayName: 'Test User',
-        photoURL: undefined,
-        phoneNumber: undefined,
-        createdAt: new Date(),
-        updatedAt: new Date(),
+      // 1. Verify Firebase ID token
+      const firebaseUser = await this.firebaseService.verifyIdToken(loginRequest.firebaseToken);
+      if (!firebaseUser || !firebaseUser.uid) {
+        throw new UnauthorizedException('Invalid Firebase token');
+      }
+
+      // 2. Find or create user in DB by firebaseUid
+      let user = await this.prismaService.user.findUnique({
+        where: { firebaseUid: firebaseUser.uid },
+      });
+      if (!user) {
+        user = await this.prismaService.user.create({
+          data: {
+            firebaseUid: firebaseUser.uid,
+          },
+        });
+      }
+
+      // 3. Generate real JWT tokens
+      const accessTokenPayload = {
+        sub: user.id,
+        firebaseUid: user.firebaseUid,
+        type: 'access',
       };
+      const accessToken = this.jwtService.generateAccessToken(accessTokenPayload);
+      const { token: refreshToken } = this.jwtService.generateRefreshToken(user.id);
 
       const tokens = {
-        accessToken: 'mock-access-token',
-        refreshToken: 'mock-refresh-token',
-        expiresIn: 900,
+        accessToken,
+        refreshToken,
+        expiresIn: 900, // 15 minutes
       };
 
-      this.logger.info('User login successful', { userId: mockUser.id, email: mockUser.email });
+      this.logger.info('User login successful', { userId: user.id });
 
       return {
-        user: mockUser,
+        user,
         tokens,
       };
     } catch (error) {
@@ -71,13 +82,36 @@ export class AuthService {
   }
 
   async refresh(refreshRequest: { refreshToken: string }) {
-    return {
-      tokens: {
-        accessToken: 'new-mock-access-token',
-        refreshToken: 'new-mock-refresh-token',
-        expiresIn: 900,
-      },
-    };
+    try {
+      // 1. Verify the refresh token
+      const payload = this.jwtService.verifyRefreshToken(refreshRequest.refreshToken);
+      if (!payload || !payload.sub) {
+        throw new UnauthorizedException('Invalid refresh token');
+      }
+      // 2. Find the user
+      const user = await this.prismaService.user.findUnique({ where: { id: payload.sub } });
+      if (!user) {
+        throw new UnauthorizedException('User not found');
+      }
+      // 3. Generate new access token
+      const accessTokenPayload = {
+        sub: user.id,
+        firebaseUid: user.firebaseUid,
+        type: 'access',
+      };
+      const accessToken = this.jwtService.generateAccessToken(accessTokenPayload);
+      return {
+        tokens: {
+          accessToken,
+          expiresIn: 900,
+        },
+      };
+    } catch (error) {
+      this.logger.error('Token refresh failed', {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      throw new UnauthorizedException('Invalid refresh token');
+    }
   }
 
   async logout(refreshToken: string): Promise<void> {
@@ -85,15 +119,23 @@ export class AuthService {
   }
 
   async verify(accessToken: string): Promise<User> {
-    return {
-      id: 'test-user-123',
-      firebaseUid: 'firebase-uid-123',
-      email: 'test@example.com',
-      displayName: 'Test User',
-      photoURL: undefined,
-      phoneNumber: undefined,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
+    try {
+      // 1. Verify the access token
+      const payload = this.jwtService.verifyAccessToken(accessToken);
+      if (!payload || !payload.sub) {
+        throw new UnauthorizedException('Invalid access token');
+      }
+      // 2. Find the user
+      const user = await this.prismaService.user.findUnique({ where: { id: payload.sub } });
+      if (!user) {
+        throw new UnauthorizedException('User not found');
+      }
+      return user;
+    } catch (error) {
+      this.logger.error('Token verification failed', {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      throw new UnauthorizedException('Invalid access token');
+    }
   }
 }

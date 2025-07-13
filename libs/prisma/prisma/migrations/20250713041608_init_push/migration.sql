@@ -1,11 +1,11 @@
 -- CreateTable
 CREATE TABLE "users" (
     "id" TEXT NOT NULL,
-    "phoneNumber" TEXT NOT NULL,
-    "username" TEXT NOT NULL,
-    "birthday" TIMESTAMP(3) NOT NULL,
-    "gender" TEXT NOT NULL,
-    "tennisLevel" TEXT NOT NULL,
+    "firebaseUid" TEXT NOT NULL,
+    "username" TEXT,
+    "birthday" TIMESTAMP(3),
+    "gender" TEXT,
+    "tennisLevel" TEXT,
     "deleted" BOOLEAN NOT NULL DEFAULT false,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -24,6 +24,9 @@ CREATE TABLE "refresh_tokens" (
 
     CONSTRAINT "refresh_tokens_pkey" PRIMARY KEY ("id")
 );
+
+-- CreateIndex
+CREATE UNIQUE INDEX "users_firebaseUid_key" ON "users"("firebaseUid");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "users_username_key" ON "users"("username");

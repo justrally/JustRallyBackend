@@ -13,7 +13,7 @@
     "test": "npm run test --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
-    "start:prod": "npm run start:prod --workspace=apps/auth-api"
+    "start:auth-api": "npm run start:auth-api --workspace=apps/auth-api"
   },
   "keywords": [
     "auth",

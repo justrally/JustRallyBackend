@@ -10,6 +10,7 @@ interface LoginRequest {
 
 interface User {
   id: string;
+  firebaseUid: string;
   email: string;
   displayName?: string;
   photoURL?: string;
@@ -19,8 +20,10 @@ interface User {
 }
 
 const createLogger = (context: string) => ({
-  info: (message: string, meta?: any) => console.log(`[${context}] ${message}`, meta ? JSON.stringify(meta) : ''),
-  error: (message: string, meta?: any) => console.error(`[${context}] ${message}`, meta ? JSON.stringify(meta) : ''),
+  info: (message: string, meta?: any) =>
+    console.log(`[${context}] ${message}`, meta ? JSON.stringify(meta) : ''),
+  error: (message: string, meta?: any) =>
+    console.error(`[${context}] ${message}`, meta ? JSON.stringify(meta) : ''),
 });
 
 @Injectable()
@@ -38,6 +41,7 @@ export class AuthService {
       // For now, create a mock response to test the service
       const mockUser: User = {
         id: 'test-user-123',
+        firebaseUid: 'firebase-uid-123',
         email: 'test@example.com',
         displayName: 'Test User',
         photoURL: undefined,
@@ -59,7 +63,9 @@ export class AuthService {
         tokens,
       };
     } catch (error) {
-      this.logger.error('Login failed', { error: error instanceof Error ? error.message : String(error) });
+      this.logger.error('Login failed', {
+        error: error instanceof Error ? error.message : String(error),
+      });
       throw new UnauthorizedException('Login failed');
     }
   }
@@ -81,6 +87,7 @@ export class AuthService {
   async verify(accessToken: string): Promise<User> {
     return {
       id: 'test-user-123',
+      firebaseUid: 'firebase-uid-123',
       email: 'test@example.com',
       displayName: 'Test User',
       photoURL: undefined,

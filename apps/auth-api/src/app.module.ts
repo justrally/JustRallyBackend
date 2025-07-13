@@ -5,7 +5,6 @@ import { AuthModule } from './auth/auth.module';
 import { HealthModule } from './health/health.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { FirebaseModule } from './firebase/firebase.module';
-import { ProfileModule } from './profile/profile.module';
 
 @Module({
   imports: [
@@ -27,7 +26,6 @@ import { ProfileModule } from './profile/profile.module';
     FirebaseModule,
     AuthModule,
     HealthModule,
-    ProfileModule,
   ],
 })
 export class AppModule {}

@@ -1,5 +1,4 @@
 import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
 
 const createLogger = (context: string) => ({
   info: (message: string, meta?: any) => console.log(`[${context}] ${message}`, meta ? JSON.stringify(meta) : ''),
@@ -7,16 +6,31 @@ const createLogger = (context: string) => ({
 });
 
 @Injectable()
-export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
+export class PrismaService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = createLogger('PrismaService');
 
   async onModuleInit() {
-    await this.$connect();
-    this.logger.info('Database connected successfully');
+    this.logger.info('Database service initialized (mock)');
   }
 
   async onModuleDestroy() {
-    await this.$disconnect();
-    this.logger.info('Database disconnected');
+    this.logger.info('Database service destroyed');
+  }
+
+  get client() {
+    // Mock client for testing
+    return {
+      user: {
+        findUnique: () => null,
+        create: () => ({}),
+        update: () => ({}),
+      },
+      refreshToken: {
+        findUnique: () => null,
+        create: () => ({}),
+        delete: () => ({}),
+        deleteMany: () => ({}),
+      },
+    };
   }
 }

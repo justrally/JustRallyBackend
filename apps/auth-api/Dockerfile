@@ -20,9 +20,8 @@ COPY . .
 # Generate Prisma client
 RUN cd libs/prisma && npx prisma generate
 
-# Build the shared library and auth-api
-RUN npm run build --workspace=libs/shared
-RUN npx tsc --project apps/auth-api/tsconfig.json
+# Build the application
+RUN npm run build
 
 # Dependencies stage for production
 FROM base AS deps
@@ -50,7 +49,6 @@ RUN adduser --system --uid 1001 nestjs
 # Copy built application
 COPY --from=builder --chown=nestjs:nodejs /app/apps/auth-api/dist ./dist
 COPY --from=deps --chown=nestjs:nodejs /app/node_modules ./node_modules
-COPY --from=builder --chown=nestjs:nodejs /app/libs/prisma/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder --chown=nestjs:nodejs /app/package*.json ./
 
 USER nestjs
@@ -59,4 +57,4 @@ EXPOSE 8080
 
 ENV PORT=8080
 
-CMD ["node", "dist/main.js"]
+CMD ["node", "dist/apps/auth-api/src/main.js"]

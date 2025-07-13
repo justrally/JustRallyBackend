@@ -50,7 +50,7 @@ jobs:
     - name: Run database migrations
       run: |
         cd libs/prisma
-        DATABASE_URL="${{ secrets.DATABASE_URL_DEV }}" npx prisma db push --accept-data-loss
+        DATABASE_URL="${{ secrets.DATABASE_URL_DEV }}" npx prisma db push
 
     - name: Deploy to Cloud Run
       run: |

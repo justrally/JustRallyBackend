@@ -1,5 +1,6 @@
 export interface User {
   id: string;
+  firebaseUid: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -31,6 +32,7 @@ export interface LoginRequest {
 }
 
 export interface LoginResponse {
+  completed: boolean;
   user: User;
   tokens: AuthTokens;
 }
@@ -40,7 +42,11 @@ export interface RefreshRequest {
 }
 
 export interface RefreshResponse {
-  tokens: AuthTokens;
+  tokens: {
+    accessToken: string;
+    refreshToken: string;
+    expiresIn: number;
+  };
 }
 
 export interface FirebaseUser {

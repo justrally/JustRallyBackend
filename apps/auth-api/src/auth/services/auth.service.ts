@@ -2,18 +2,14 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { FirebaseService } from '../../firebase/firebase.service';
 import { JwtService } from './jwt.service';
-
-// Simple types for now
-interface LoginRequest {
-  firebaseToken: string;
-}
-
-interface User {
-  id: string;
-  firebaseUid: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
+import {
+  LoginRequest,
+  LoginResponse,
+  RefreshRequest,
+  RefreshResponse,
+  User,
+} from '@justrally/shared';
+import { isNil } from 'lodash';
 
 const createLogger = (context: string) => ({
   info: (message: string, meta?: any) =>
@@ -32,7 +28,7 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
-  async login(loginRequest: LoginRequest) {
+  async login(loginRequest: LoginRequest): Promise<LoginResponse> {
     try {
       // 1. Verify Firebase ID token
       const firebaseUser = await this.firebaseService.verifyIdToken(loginRequest.firebaseToken);
@@ -68,8 +64,14 @@ export class AuthService {
       };
 
       this.logger.info('User login successful', { userId: user.id });
+      const completed =
+        !isNil(user.birthday) &&
+        !isNil(user.gender) &&
+        !isNil(user.tennisLevel) &&
+        !isNil(user.username);
 
       return {
+        completed,
         user,
         tokens,
       };
@@ -81,7 +83,7 @@ export class AuthService {
     }
   }
 
-  async refresh(refreshRequest: { refreshToken: string }) {
+  async refresh(refreshRequest: RefreshRequest): Promise<RefreshResponse> {
     try {
       // 1. Verify the refresh token
       const payload = this.jwtService.verifyRefreshToken(refreshRequest.refreshToken);
@@ -100,9 +102,11 @@ export class AuthService {
         type: 'access',
       };
       const accessToken = this.jwtService.generateAccessToken(accessTokenPayload);
+      const { token: refreshToken } = this.jwtService.generateRefreshToken(user.id);
       return {
         tokens: {
           accessToken,
+          refreshToken,
           expiresIn: 900,
         },
       };

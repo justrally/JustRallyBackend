@@ -8,6 +8,7 @@ import {
   RefreshRequest,
   RefreshResponse,
   User,
+  FirebaseUser,
 } from '@justrally/shared';
 import { isNil } from 'lodash';
 
@@ -51,8 +52,7 @@ export class AuthService {
       // 3. Generate real JWT tokens
       const accessTokenPayload = {
         sub: user.id,
-        firebaseUid: user.firebaseUid,
-        type: 'access',
+        email: firebaseUser.email || 'no-email@justrally.com', // Fallback email if not provided
       };
       const accessToken = this.jwtService.generateAccessToken(accessTokenPayload);
       const { token: refreshToken } = this.jwtService.generateRefreshToken(user.id);
@@ -95,11 +95,11 @@ export class AuthService {
       if (!user) {
         throw new UnauthorizedException('User not found');
       }
-      // 3. Generate new access token
+      // 3. Generate new access token - we need to get the email from Firebase
+      // For refresh tokens, we'll use a default email since we don't have the original Firebase user
       const accessTokenPayload = {
         sub: user.id,
-        firebaseUid: user.firebaseUid,
-        type: 'access',
+        email: 'no-email@justrally.com', // Default email for refresh tokens
       };
       const accessToken = this.jwtService.generateAccessToken(accessTokenPayload);
       const { token: refreshToken } = this.jwtService.generateRefreshToken(user.id);

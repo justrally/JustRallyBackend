@@ -9,7 +9,10 @@ export class ProfileService {
 
   async getProfile(userId: string): Promise<ProfileResponseDto> {
     const user = await this.prisma.user.findUnique({
-      where: { id: userId },
+      where: { 
+        id: userId,
+        deleted: false 
+      },
     });
 
     if (!user) {
@@ -25,8 +28,11 @@ export class ProfileService {
   ): Promise<ProfileResponseDto> {
     // Check if username is being updated and if it's already taken
     if (updateProfileDto.username) {
-      const existingUser = await this.prisma.user.findUnique({
-        where: { username: updateProfileDto.username },
+      const existingUser = await this.prisma.user.findFirst({
+        where: { 
+          username: updateProfileDto.username,
+          deleted: false 
+        },
       });
 
       if (existingUser && existingUser.id !== userId) {
@@ -44,7 +50,10 @@ export class ProfileService {
 
     try {
       const updatedUser = await this.prisma.user.update({
-        where: { id: userId },
+        where: { 
+          id: userId,
+          deleted: false 
+        },
         data,
       });
 
@@ -61,8 +70,11 @@ export class ProfileService {
   }
 
   async checkUsernameAvailability(username: string): Promise<{ available: boolean }> {
-    const user = await this.prisma.user.findUnique({
-      where: { username },
+    const user = await this.prisma.user.findFirst({
+      where: { 
+        username,
+        deleted: false 
+      },
     });
 
     return { available: !user };

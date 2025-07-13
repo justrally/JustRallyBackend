@@ -2,7 +2,7 @@ name: Deploy to Development
 
 on:
   push:
-    branches: [ dev ]
+    branches: [dev]
 
 jobs:
   deploy-dev:
@@ -10,81 +10,81 @@ jobs:
     environment: development
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '18'
-        cache: 'npm'
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
 
-    - name: Install dependencies
-      run: npm ci
+      - name: Install dependencies
+        run: npm ci
 
-    - name: Build application
-      run: |
-        npm run build --workspace=libs/shared
-        cd libs/prisma && npx prisma generate && cd ../..
-        npx tsc --project apps/auth-api/tsconfig.json
+      - name: Build application
+        run: |
+          npm run build --workspace=libs/shared
+          cd libs/prisma && npx prisma generate && cd ../..
+          npx tsc --project apps/auth-api/tsconfig.json
 
-    - id: 'auth'
-      name: 'Authenticate to Google Cloud'
-      uses: 'google-github-actions/auth@v2'
-      with:
-        credentials_json: '${{ secrets.GCP_SERVICE_ACCOUNT_KEY_DEV }}'
+      - id: 'auth'
+        name: 'Authenticate to Google Cloud'
+        uses: 'google-github-actions/auth@v2'
+        with:
+          credentials_json: '${{ secrets.GCP_SERVICE_ACCOUNT_KEY_DEV }}'
 
-    - name: 'Set up Cloud SDK'
-      uses: 'google-github-actions/setup-gcloud@v2'
+      - name: 'Set up Cloud SDK'
+        uses: 'google-github-actions/setup-gcloud@v2'
 
-    - name: Configure Docker for Artifact Registry
-      run: gcloud auth configure-docker us-central1-docker.pkg.dev
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker us-central1-docker.pkg.dev
 
-    - name: Build and push Docker image
-      run: |
-        IMAGE_TAG="us-central1-docker.pkg.dev/justrallydev/justrally-backend/auth-api:${{ github.sha }}"
-        docker build -f apps/auth-api/Dockerfile -t $IMAGE_TAG .
-        docker push $IMAGE_TAG
-        echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
+      - name: Build and push Docker image
+        run: |
+          IMAGE_TAG="us-central1-docker.pkg.dev/justrallydev/justrally-backend/auth-api:${{ github.sha }}"
+          docker build -f apps/auth-api/Dockerfile -t $IMAGE_TAG .
+          docker push $IMAGE_TAG
+          echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
 
-    - name: Run database migrations
-      run: |
-        cd libs/prisma
-        DATABASE_URL="${{ secrets.DATABASE_URL_DEV }}" npx prisma db push
+      - name: Run database migrations
+        run: |
+          cd libs/prisma
+          DATABASE_URL="${{ secrets.DATABASE_URL_DEV }}" npx prisma db push
 
-    - name: Deploy to Cloud Run
-      run: |
-        gcloud run deploy auth-api-dev \
-          --image ${{ env.IMAGE_TAG }} \
-          --platform managed \
-          --region us-central1 \
-          --allow-unauthenticated \
-          --set-env-vars "NODE_ENV=development" \
-          --set-env-vars "FIREBASE_PROJECT_ID=justrallydevfirebase" \
-          --set-env-vars "GCP_PROJECT_ID=justrallydev" \
-          --set-secrets "DATABASE_URL=DATABASE_URL_DEV:latest" \
-          --set-secrets "JWT_PRIVATE_KEY=JWT_PRIVATE_KEY_DEV:latest" \
-          --set-secrets "JWT_PUBLIC_KEY=JWT_PUBLIC_KEY_DEV:latest" \
-          --add-cloudsql-instances justrallydev:us-central1:justrally-db-dev \
-          --memory 256Mi \
-          --cpu 0.25 \
-          --max-instances 3 \
-          --port 8080 \
-          --project justrallydev
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy auth-api-dev \
+            --image ${{ env.IMAGE_TAG }} \
+            --platform managed \
+            --region us-central1 \
+            --allow-unauthenticated \
+            --set-env-vars "NODE_ENV=development" \
+            --set-env-vars "FIREBASE_PROJECT_ID=justrallydevfirebase" \
+            --set-env-vars "GCP_PROJECT_ID=justrallydev" \
+            --set-secrets "DATABASE_URL=DATABASE_URL_DEV:latest" \
+            --set-secrets "JWT_PRIVATE_KEY=JWT_PRIVATE_KEY_DEV:latest" \
+            --set-secrets "JWT_PUBLIC_KEY=JWT_PUBLIC_KEY_DEV:latest" \
+            --add-cloudsql-instances justrallydev:us-central1:justrally-db-dev \
+            --memory 256Mi \
+            --cpu 1 \
+            --max-instances 3 \
+            --port 8080 \
+            --project justrallydev
 
-    - name: Test deployment
-      run: |
-        URL=$(gcloud run services describe auth-api-dev --platform managed --region us-central1 --format 'value(status.url)' --project justrallydev)
-        echo "Testing deployment at: $URL"
-        sleep 30
-        curl -f "$URL/api/v1/health" || exit 1
+      - name: Test deployment
+        run: |
+          URL=$(gcloud run services describe auth-api-dev --platform managed --region us-central1 --format 'value(status.url)' --project justrallydev)
+          echo "Testing deployment at: $URL"
+          sleep 30
+          curl -f "$URL/api/v1/health" || exit 1
 
-    - name: Update custom domain mapping
-      run: |
-        gcloud beta run domain-mappings create \
-          --service auth-api-dev \
-          --domain api-dev.justrally.online \
-          --platform managed \
-          --region us-central1 \
-          --project justrallydev \
-          --quiet || echo "Domain mapping may already exist"
+      - name: Update custom domain mapping
+        run: |
+          gcloud beta run domain-mappings create \
+            --service auth-api-dev \
+            --domain api-dev.justrally.online \
+            --platform managed \
+            --region us-central1 \
+            --project justrallydev \
+            --quiet || echo "Domain mapping may already exist"

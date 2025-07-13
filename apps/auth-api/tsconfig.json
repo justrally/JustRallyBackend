@@ -3,10 +3,16 @@
   "compilerOptions": {
     "outDir": "./dist",
     "baseUrl": "./src",
-    "paths": {
-      "@prisma/*": ["prisma/*"],
-      "@firebase/*": ["firebase/*"]
-    }
+    "target": "ES2020",
+    "module": "CommonJS",
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "strict": true
   },
   "include": ["src/**/*"],
   "exclude": ["dist", "node_modules", "**/*.test.ts", "**/*.spec.ts"]

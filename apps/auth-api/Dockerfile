@@ -22,7 +22,7 @@ RUN cd libs/prisma && npx prisma generate
 
 # Build the shared library and auth-api
 RUN npm run build --workspace=libs/shared
-RUN npx tsc --project apps/auth-api/tsconfig.json
+RUN cd apps/auth-api && npm run build
 
 # Dependencies stage for production
 FROM base AS deps

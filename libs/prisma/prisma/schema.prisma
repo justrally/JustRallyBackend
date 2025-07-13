@@ -13,10 +13,17 @@ datasource db {
 
 model User {
   id          String   @id @default(cuid())
-  email       String   @unique
-  displayName String?
-  photoURL    String?
-  phoneNumber String?
+  phoneNumber String
+  
+  // Profile fields (required)
+  username    String   @unique
+  birthday    DateTime
+  gender      String
+  tennisLevel String
+  
+  // Soft delete
+  deleted     Boolean  @default(false)
+  
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

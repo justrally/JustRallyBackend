@@ -14,11 +14,20 @@
     "lint": "npm run lint --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present"
   },
-  "keywords": ["auth", "api", "nodejs", "nestjs", "monorepo"],
+  "keywords": [
+    "auth",
+    "api",
+    "nodejs",
+    "nestjs",
+    "monorepo"
+  ],
   "author": "JustRally",
   "license": "MIT",
   "engines": {
     "node": ">=18.0.0",
     "npm": ">=8.0.0"
+  },
+  "dependencies": {
+    "zod": "^4.0.5"
   }
 }

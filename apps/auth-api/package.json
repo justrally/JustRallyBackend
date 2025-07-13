@@ -7,7 +7,7 @@
     "build": "nest build",
     "dev": "nest start --watch",
     "start": "node dist/main",
-    "start:auth-api": "node dist/apps/auth-api/src/main",
+    "start:auth-api": "node dist/main",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",

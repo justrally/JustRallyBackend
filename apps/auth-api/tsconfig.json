@@ -2,6 +2,7 @@
   "extends": "../../tsconfig.json",
   "compilerOptions": {
     "outDir": "./dist",
+    "rootDir": "./src",
     "baseUrl": "./src",
     "target": "ES2020",
     "module": "CommonJS",
